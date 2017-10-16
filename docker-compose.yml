@@ -1,0 +1,55 @@
+version: '2.1'
+services:
+#
+# Cassandra
+#
+  
+  cassandra1:
+    build: ./src/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+    environment:
+        - CASSANDRA_CLUSTER_NAME=dev_cluster
+    networks:
+      - dc1ring
+    
+  cassandra2:
+    build: ./src/cassandra
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 60; fi && /docker-entrypoint.sh cassandra -f'
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+    environment:
+        - CASSANDRA_CLUSTER_NAME=dev_cluster
+        - CASSANDRA_SEEDS=cassandra1
+    depends_on:
+          - cassandra1
+    networks:
+      - dc1ring
+
+  cassandra3:
+    build: ./src/cassandra
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 120; fi && /docker-entrypoint.sh cassandra -f'
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+    environment:
+        - CASSANDRA_CLUSTER_NAME=dev_cluster
+        - CASSANDRA_SEEDS=cassandra1
+    depends_on:
+          - cassandra1
+    networks:
+      - dc1ring
+
+networks:
+    dc1ring:
